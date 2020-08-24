@@ -1,0 +1,5 @@
+﻿  GetFileVersion.cpp
+G:\Get-Module-Version-master\GetFileVersion\GetFileVersion.cpp(48,2): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+G:\Get-Module-Version-master\GetFileVersion\GetFileVersion.cpp(68,4): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+G:\Get-Module-Version-master\GetFileVersion\GetFileVersion.cpp(76,4): warning C4996: 'sprintf': This function or variable may be unsafe. Consider using sprintf_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+  GetFileVersion.vcxproj -> G:\Get-Module-Version-master\x64\Debug\GetFileVersion.exe
