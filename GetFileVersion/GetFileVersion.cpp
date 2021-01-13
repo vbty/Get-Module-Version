@@ -1,7 +1,19 @@
 ﻿#include "windows.h"
 #include "stdio.h"
+#include "string.h"
 
 DWORD gVersion = 0;
+
+CONST CHAR* DictBlackList[] = {
+	"SysWOW64",
+	"WinSxS"
+};
+
+CONST CHAR* ExtNameWhiteList[] = {
+	"sys",
+	"exe",
+	"dll"
+};
 
 VOID WINAPI GetModuleVersion(CHAR* pModulePath)
 {
@@ -45,6 +57,14 @@ VOID TraverDict(PCHAR StartFilePath)
 	WIN32_FIND_DATAA FindFileData;
 	HANDLE hFind;
 
+	for (size_t i = 0; i < sizeof(DictBlackList)/sizeof(PCHAR); i++)
+	{
+		if (strstr(StartFilePath, DictBlackList[i]))
+		{
+			return;
+		}
+	}
+
 	sprintf(NewPath, "%s\\*", StartFilePath);
 	hFind = FindFirstFileA(NewPath, &FindFileData);
 
@@ -69,12 +89,15 @@ VOID TraverDict(PCHAR StartFilePath)
 			TraverDict(NewPath);                               
 		}
 
-		if (!strstr(FindFileData.cFileName,".mui")&&
-			(strstr(FindFileData.cFileName, ".exe") || strstr(FindFileData.cFileName, ".dll")))
+		for (size_t i = 0; i < sizeof(ExtNameWhiteList)/sizeof(PCHAR); i++)
 		{
-			ZeroMemory(NewPath, MAX_PATH);
-			sprintf(NewPath, "%s\\%s", StartFilePath, FindFileData.cFileName);
-			GetModuleVersion(NewPath);
+			if (strstr(FindFileData.cFileName, ExtNameWhiteList[i]))
+			{
+				ZeroMemory(NewPath, MAX_PATH);
+				sprintf(NewPath, "%s\\%s", StartFilePath, FindFileData.cFileName);
+				GetModuleVersion(NewPath);
+				break;
+			}	
 		}
 	}
 	FindClose(hFind);
