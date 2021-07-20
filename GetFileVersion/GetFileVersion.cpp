@@ -1,8 +1,12 @@
 ﻿#include "windows.h"
 #include "stdio.h"
 #include "string.h"
+#include "shlwapi.h"
 
 DWORD gVersion = 0;
+BOOLEAN bBackup = FALSE;
+CHAR BackupDict[MAX_PATH] = "";
+BOOLEAN DEBUG = FALSE;
 
 CONST CHAR* DictBlackList[] = {
 	"SysWOW64",
@@ -46,6 +50,52 @@ VOID WINAPI GetModuleVersion(CHAR* pModulePath)
 				(pFixedFileInfo->dwFileVersionLS >> 0) & 0xffff,
 				pModulePath
 			);
+
+			if (bBackup)
+			{
+				CHAR NewFileName[MAX_PATH] = "";
+				CHAR PartFileName[MAX_PATH] = "";
+				PCHAR LastBackslash = NULL;
+				PCHAR LastDot = NULL;
+
+				LastBackslash = StrRStrIA(
+					pModulePath,
+					NULL,
+					"\\");
+
+				if (!LastBackslash)
+				{
+					puts("LastBackslash error");
+				}
+				
+				lstrcpyA(PartFileName, LastBackslash + 1);
+
+				LastDot = StrRStrIA(
+					PartFileName,
+					NULL,
+					".");
+
+				if (!LastDot)
+				{
+					puts("LastDot error");
+				}
+
+				LastDot[0] = '\x00';
+
+				sprintf_s(NewFileName, MAX_PATH, "%s\\%s.%d.%s",
+					BackupDict,
+					PartFileName,
+					(pFixedFileInfo->dwFileVersionLS >> 0) & 0xffff,
+					LastDot+1);
+
+				if (!CopyFileA(pModulePath, NewFileName, TRUE))
+				{
+					DWORD LastError = GetLastError();
+					if (LastError == 80)
+						return;
+					printf("[ERROR] CopyFile %d\n", LastError);
+				}
+			}
 		}
 	}
 	return;
@@ -53,7 +103,7 @@ VOID WINAPI GetModuleVersion(CHAR* pModulePath)
 
 VOID TraverDict(PCHAR StartFilePath)
 {
-	CHAR NewPath[MAX_PATH] = "";
+	CHAR NewPath[MAX_PATH*2] = "";
 	WIN32_FIND_DATAA FindFileData;
 	HANDLE hFind;
 
@@ -70,7 +120,11 @@ VOID TraverDict(PCHAR StartFilePath)
 
 	if (hFind == INVALID_HANDLE_VALUE)
 	{
-		printf("Dict Not Find: %s\n", StartFilePath);
+		if (DEBUG)
+		{
+			printf("Dict Not Find: %s\n", StartFilePath);
+		}
+	
 		return;
 	}
 
@@ -91,6 +145,11 @@ VOID TraverDict(PCHAR StartFilePath)
 
 		for (size_t i = 0; i < sizeof(ExtNameWhiteList)/sizeof(PCHAR); i++)
 		{
+			if (strstr(FindFileData.cFileName, ".mui"))
+			{
+				continue;
+			}
+
 			if (strstr(FindFileData.cFileName, ExtNameWhiteList[i]))
 			{
 				ZeroMemory(NewPath, MAX_PATH);
@@ -103,14 +162,35 @@ VOID TraverDict(PCHAR StartFilePath)
 	FindClose(hFind);
 }
 
+VOID ShowUsage(VOID)
+{
+	puts("Usage:"
+	"start_path ver_num [-b backup_path]");
+}
+
 int main(int argc,char *argv[])
 {
 	CHAR StartPath[MAX_PATH] = "";
 
-	if (argc != 3)
+	if (argc < 3)
 	{
-		puts("path_name version");
+		ShowUsage();
 		return 0;
+	}
+
+	if (argc == 5)
+	{
+		if (argv[3][0] == '-' &&
+			argv[3][1] == 'b')
+		{
+			bBackup = TRUE;
+			lstrcpyA(BackupDict, argv[4]);
+		}
+		else
+		{
+			ShowUsage();
+			return 0;
+		}
 	}
 
 	gVersion = atoi(argv[2]);
